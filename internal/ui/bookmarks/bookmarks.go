@@ -1,7 +1,6 @@
 package bookmarks
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/idursun/jjui/internal/jj"
-	"github.com/idursun/jjui/internal/ui/actions"
 	"github.com/idursun/jjui/internal/ui/common"
 	"github.com/idursun/jjui/internal/ui/context"
 	"github.com/idursun/jjui/internal/ui/intents"
@@ -69,7 +67,7 @@ type Model struct {
 	filterText          string
 	categoryFilter      string
 	ensureCursorVisible bool
-	title               string
+	kind                refKind
 }
 
 func (m *Model) IsFocused() bool {
@@ -120,12 +118,12 @@ func (m *Model) Scopes() []common.Scope {
 	if m.IsEditing() {
 		return []common.Scope{
 			{
-				Name:    actions.ScopeBookmarks + ".filter",
+				Name:    m.kind.scope + ".filter",
 				Leak:    common.LeakNone,
 				Handler: m,
 			},
 			{
-				Name:    actions.ScopeBookmarks,
+				Name:    m.kind.scope,
 				Leak:    common.LeakNone,
 				Handler: m,
 			},
@@ -133,7 +131,7 @@ func (m *Model) Scopes() []common.Scope {
 	}
 	return []common.Scope{
 		{
-			Name:    actions.ScopeBookmarks,
+			Name:    m.kind.scope,
 			Leak:    common.LeakAll,
 			Handler: m,
 		},
@@ -141,7 +139,11 @@ func (m *Model) Scopes() []common.Scope {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(m.loadAll, m.loadMovables)
+	cmds := make([]tea.Cmd, 0, len(m.kind.loaders))
+	for _, load := range m.kind.loaders {
+		cmds = append(cmds, func() tea.Msg { return load(m) })
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m *Model) filtered(filter string) tea.Cmd {
@@ -213,112 +215,6 @@ func (m *Model) filterItemsByRemote(allItems []item) []item {
 	}
 
 	return filtered
-}
-
-func (m *Model) loadMovables() tea.Msg {
-	// A hidden revision has no visible descendants, so look for bookmarks
-	// around the visible revision of its change instead.
-	output, _ := m.context.RunCommandImmediate(jj.BookmarkListMovable(m.current.ChangeId))
-	var bookmarkItems []item
-	bookmarks := jj.ParseBookmarkListOutput(string(output))
-	for _, b := range bookmarks {
-		if b.Local == nil || !b.Local.Present {
-			continue
-		}
-		localCommitID := b.Local.CommitId
-		if !b.Conflict && localCommitID == m.current.CommitId {
-			continue
-		}
-
-		name := fmt.Sprintf("move '%s' to %s", b.Name, m.current.GetChangeId())
-		if b.Conflict {
-			name = fmt.Sprintf("move conflicted '%s' to %s", b.Name, m.current.GetChangeId())
-		}
-		var extraFlags []string
-		if b.Backwards {
-			name = fmt.Sprintf("move '%s' backwards to %s", b.Name, m.current.GetChangeId())
-			extraFlags = append(extraFlags, "--allow-backwards")
-		}
-		elem := item{
-			name:     name,
-			priority: moveCommand,
-			args:     jj.BookmarkMove(m.current.GetChangeId(), b.Name, extraFlags...),
-			dist:     m.distance(localCommitID),
-		}
-		if b.Name == "main" || b.Name == "master" {
-			elem.key = "m"
-		}
-		bookmarkItems = append(bookmarkItems, elem)
-	}
-	return updateItemsMsg{items: bookmarkItems}
-}
-
-func (m *Model) loadAll() tea.Msg {
-	output, err := m.context.RunCommandImmediate(jj.BookmarkListAll())
-	if err != nil {
-		return nil
-	}
-
-	bookmarks := jj.ParseBookmarkListOutput(string(output))
-	items := make([]item, 0)
-	defaultRemote := m.defaultTrackRemote()
-	for _, b := range bookmarks {
-		localCommitID := ""
-		if b.Local != nil {
-			localCommitID = b.Local.CommitId
-		}
-		distance := m.distance(localCommitID)
-		if command, ok := jj.BookmarkDeleteCommand(b); ok {
-			items = append(items, item{
-				name:     fmt.Sprintf("delete '%s'", b.Name),
-				priority: deleteCommand,
-				dist:     distance,
-				args:     command,
-			})
-		}
-
-		if command, ok := jj.BookmarkForgetCommand(b); ok {
-			items = append(items, item{
-				name:     fmt.Sprintf("forget '%s'", b.Name),
-				priority: forgetCommand,
-				dist:     distance,
-				args:     command,
-			})
-		}
-
-		if b.IsTrackable() {
-			if command, ok := jj.BookmarkTrackLocalCommand(b, defaultRemote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("track '%s'", b.Name),
-					priority: trackCommand,
-					dist:     distance,
-					args:     command,
-				})
-			}
-		}
-
-		for _, remote := range b.Remotes {
-			nameWithRemote := fmt.Sprintf("%s@%s", b.Name, remote.Remote)
-			if command, ok := jj.BookmarkUntrackRemoteCommand(b, remote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("untrack '%s'", nameWithRemote),
-					priority: untrackCommand,
-					dist:     distance,
-					args:     command,
-				})
-				continue
-			}
-			if command, ok := jj.BookmarkTrackRemoteCommand(b, remote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("track '%s'", nameWithRemote),
-					priority: trackCommand,
-					dist:     distance,
-					args:     command,
-				})
-			}
-		}
-	}
-	return updateItemsMsg{items: items}
 }
 
 func (m *Model) Update(msg tea.Msg) tea.Cmd {
@@ -492,11 +388,11 @@ func (m *Model) ViewRect(dl *render.DisplayContext, box layout.Box) {
 		return
 	}
 
-	menuTitleStyle := theme.DefaultPalette.Get("bookmarks", "", "title", false)
-	menuTextStyle := theme.DefaultPalette.Get("bookmarks", "", "text", false)
-	inputTextStyle := theme.DefaultPalette.Get("bookmarks", "input", "text", false)
-	inputMatchedStyle := theme.DefaultPalette.Get("bookmarks", "input", "matched", false)
-	borderStyle := theme.DefaultPalette.GetBorder("bookmarks", "", "border", false, lipgloss.NormalBorder())
+	menuTitleStyle := theme.DefaultPalette.Get(m.kind.themeKey, "", "title", false)
+	menuTextStyle := theme.DefaultPalette.Get(m.kind.themeKey, "", "text", false)
+	inputTextStyle := theme.DefaultPalette.Get(m.kind.themeKey, "input", "text", false)
+	inputMatchedStyle := theme.DefaultPalette.Get(m.kind.themeKey, "input", "matched", false)
+	borderStyle := theme.DefaultPalette.GetBorder(m.kind.themeKey, "", "border", false, lipgloss.NormalBorder())
 
 	dl.AddBackdrop(box.R, render.ZMenuBorder-1)
 	contentBox := frame.Inset(1)
@@ -511,7 +407,7 @@ func (m *Model) ViewRect(dl *render.DisplayContext, box layout.Box) {
 	titleBox, contentBox := contentBox.CutTop(1)
 	dl.
 		Text(titleBox.R.Min.X, titleBox.R.Min.Y, render.ZMenuContent).
-		Styled(m.title, menuTitleStyle).
+		Styled(m.kind.title, menuTitleStyle).
 		Done()
 
 	_, contentBox = contentBox.CutTop(1)
@@ -543,11 +439,11 @@ func (m *Model) renderRemotes(dl *render.DisplayContext, lineBox layout.Box) {
 		return
 	}
 
-	remotePromptStyle := theme.DefaultPalette.Get("bookmarks", "remote", "title", false)
-	remoteTextStyle := theme.DefaultPalette.Get("bookmarks", "remote", "text", false)
-	remoteDimmedStyle := theme.DefaultPalette.Get("bookmarks", "remote", "dimmed", false)
-	remoteSelectedStyle := theme.DefaultPalette.GetBlended("bookmarks", "remote", "", true)
-	noRemoteStyle := theme.DefaultPalette.Get("bookmarks", "remote", "error", false)
+	remotePromptStyle := theme.DefaultPalette.Get(m.kind.themeKey, "remote", "title", false)
+	remoteTextStyle := theme.DefaultPalette.Get(m.kind.themeKey, "remote", "text", false)
+	remoteDimmedStyle := theme.DefaultPalette.Get(m.kind.themeKey, "remote", "dimmed", false)
+	remoteSelectedStyle := theme.DefaultPalette.GetBlended(m.kind.themeKey, "remote", "", true)
+	noRemoteStyle := theme.DefaultPalette.Get(m.kind.themeKey, "remote", "error", false)
 
 	dl.AddFill(lineBox.R, ' ', remoteTextStyle, render.ZMenuContent)
 
@@ -604,7 +500,7 @@ func NewModel(c *context.MainContext, current *jj.Commit, commitIds []string) *M
 		remoteNames:       remotes,
 		selectedRemoteIdx: 0,
 		listRenderer:      render.NewListRenderer(newItemScrollMsg),
-		title:             "Bookmark Operations",
+		kind:              bookmarkKind,
 		allItems:          make([]item, 0),
 	}
 	m.listRenderer.Z = render.ZMenuContent
@@ -753,8 +649,8 @@ func (m *Model) renderFilterView(dl *render.DisplayContext, box layout.Box) {
 		return
 	}
 	width := box.R.Dx()
-	menuTextStyle := theme.DefaultPalette.Get("bookmarks", "", "text", false)
-	menuMatchedStyle := theme.DefaultPalette.Get("bookmarks", "", "matched", false)
+	menuTextStyle := theme.DefaultPalette.Get(m.kind.themeKey, "", "text", false)
+	menuMatchedStyle := theme.DefaultPalette.Get(m.kind.themeKey, "", "matched", false)
 	labelStyle := menuTextStyle.PaddingLeft(1).PaddingRight(1)
 	valueStyle := menuMatchedStyle
 
@@ -811,7 +707,7 @@ func (m *Model) renderList(dl *render.DisplayContext, listBox layout.Box) {
 			if index < 0 || index >= itemCount {
 				return
 			}
-			renderItem(dl, rect, listWidth, m.categoryFilter != "", m.cursor, index, items[index])
+			renderItem(dl, rect, m.kind.themeKey, listWidth, m.categoryFilter != "", m.cursor, index, items[index])
 		},
 		func(index int, _ tea.Mouse) tea.Msg { return itemClickMsg{Index: index} },
 	)
@@ -819,7 +715,7 @@ func (m *Model) renderList(dl *render.DisplayContext, listBox layout.Box) {
 	m.ensureCursorVisible = false
 }
 
-func renderItem(dl *render.DisplayContext, rect layout.Rectangle, width int, showShortcuts bool, cursor int, index int, item item) {
+func renderItem(dl *render.DisplayContext, rect layout.Rectangle, themeKey string, width int, showShortcuts bool, cursor int, index int, item item) {
 	var (
 		title string
 		desc  string
@@ -847,9 +743,9 @@ func renderItem(dl *render.DisplayContext, rect layout.Rectangle, width int, sho
 	if isSelected {
 		getStyle = theme.DefaultPalette.GetBlended
 	}
-	textStyle := getStyle("bookmarks", "", "text", isSelected)
-	descStyle := getStyle("bookmarks", "", "dimmed", isSelected)
-	shortcutStyle := getStyle("bookmarks", "", "shortcut", isSelected)
+	textStyle := getStyle(themeKey, "", "text", isSelected)
+	descStyle := getStyle(themeKey, "", "dimmed", isSelected)
+	shortcutStyle := getStyle(themeKey, "", "shortcut", isSelected)
 
 	titleLine := ""
 	if shortcut != "" {
