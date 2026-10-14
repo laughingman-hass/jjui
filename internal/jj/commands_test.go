@@ -56,6 +56,10 @@ func TestTagSetAlwaysAllowsMove(t *testing.T) {
 	assert.Equal(t, CommandArgs{"tag", "set", "--allow-move", "-r", "abc123", "v1.0"}, TagSet("abc123", "v1.0"))
 }
 
+func TestTagDeleteUsesExactPattern(t *testing.T) {
+	assert.Equal(t, CommandArgs{"tag", "delete", `exact:"v1.0"`}, TagDelete("v1.0"))
+}
+
 func TestTagListAllUsesAllRefsTemplate(t *testing.T) {
 	assert.Equal(t, CommandArgs{"tag", "list", "-a", "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}, TagListAll())
 }

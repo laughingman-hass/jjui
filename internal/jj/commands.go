@@ -228,6 +228,10 @@ func BookmarkDelete(name string) CommandArgs {
 	return []string{"bookmark", "delete", exactStringPattern(name)}
 }
 
+func TagDelete(name string) CommandArgs {
+	return []string{"tag", "delete", exactStringPattern(name)}
+}
+
 func BookmarkRename(oldName string, newName string) CommandArgs {
 	return []string{"bookmark", "rename", oldName, newName}
 }
