@@ -489,6 +489,15 @@ func (m *Model) defaultTrackRemote() string {
 }
 
 func NewModel(c *context.MainContext, current *jj.Commit, commitIds []string) *Model {
+	return newModel(c, current, commitIds, bookmarkKind)
+}
+
+// NewTagModel opens the same menu for tags.
+func NewTagModel(c *context.MainContext, current *jj.Commit, commitIds []string) *Model {
+	return newModel(c, current, commitIds, tagKind)
+}
+
+func newModel(c *context.MainContext, current *jj.Commit, commitIds []string, kind refKind) *Model {
 	remotes := loadRemoteNames(c)
 	// Add "local" as the first option to view local bookmark operations
 	remotes = append([]string{"local"}, remotes...)
@@ -500,7 +509,7 @@ func NewModel(c *context.MainContext, current *jj.Commit, commitIds []string) *M
 		remoteNames:       remotes,
 		selectedRemoteIdx: 0,
 		listRenderer:      render.NewListRenderer(newItemScrollMsg),
-		kind:              bookmarkKind,
+		kind:              kind,
 		allItems:          make([]item, 0),
 	}
 	m.listRenderer.Z = render.ZMenuContent

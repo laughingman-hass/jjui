@@ -26,6 +26,48 @@ var bookmarkKind = refKind{
 	loaders:    []func(*Model) tea.Msg{(*Model).loadAll, (*Model).loadMovables},
 }
 
+var tagKind = refKind{
+	subcommand: "tag",
+	title:      "Tag Operations",
+	scope:      actions.ScopeTags,
+	themeKey:   "tags",
+	loaders:    []func(*Model) tea.Msg{(*Model).loadTags},
+}
+
+// loadTags builds every tag item from a single `jj tag list -a`. Tags have no
+// forget, and any present local tag can be moved: there is no nearby-only
+// filter and no backwards detection.
+func (m *Model) loadTags() tea.Msg {
+	output, err := m.context.RunCommandImmediate(jj.TagListAll())
+	if err != nil {
+		return nil
+	}
+
+	rev := m.current.GetChangeId()
+	defaultRemote := m.defaultTrackRemote()
+	var items []item
+	for _, t := range jj.ParseBookmarkListOutput(string(output)) {
+		localCommitID := ""
+		if t.Local != nil {
+			localCommitID = t.Local.CommitId
+		}
+		distance := m.distance(localCommitID)
+
+		if t.IsDeletable() {
+			if t.Conflict || localCommitID != m.current.CommitId {
+				name := fmt.Sprintf("move '%s' to %s", t.Name, rev)
+				if t.Conflict {
+					name = fmt.Sprintf("move conflicted '%s' to %s", t.Name, rev)
+				}
+				items = append(items, item{name: name, priority: moveCommand, dist: distance, args: jj.TagSet(rev, t.Name)})
+			}
+			items = append(items, item{name: fmt.Sprintf("delete '%s'", t.Name), priority: deleteCommand, dist: distance, args: jj.TagDelete(t.Name)})
+		}
+		items = append(items, m.trackItems(t, distance, defaultRemote)...)
+	}
+	return updateItemsMsg{items: items}
+}
+
 func (m *Model) loadMovables() tea.Msg {
 	// A hidden revision has no visible descendants, so look for bookmarks
 	// around the visible revision of its change instead.
@@ -97,37 +139,43 @@ func (m *Model) loadAll() tea.Msg {
 			})
 		}
 
-		if b.IsTrackable() {
-			if command, ok := jj.RefTrackLocalCommand(m.kind.subcommand, b, defaultRemote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("track '%s'", b.Name),
-					priority: trackCommand,
-					dist:     distance,
-					args:     command,
-				})
-			}
-		}
-
-		for _, remote := range b.Remotes {
-			nameWithRemote := fmt.Sprintf("%s@%s", b.Name, remote.Remote)
-			if command, ok := jj.RefUntrackRemoteCommand(m.kind.subcommand, b, remote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("untrack '%s'", nameWithRemote),
-					priority: untrackCommand,
-					dist:     distance,
-					args:     command,
-				})
-				continue
-			}
-			if command, ok := jj.RefTrackRemoteCommand(m.kind.subcommand, b, remote); ok {
-				items = append(items, item{
-					name:     fmt.Sprintf("track '%s'", nameWithRemote),
-					priority: trackCommand,
-					dist:     distance,
-					args:     command,
-				})
-			}
-		}
+		items = append(items, m.trackItems(b, distance, defaultRemote)...)
 	}
 	return updateItemsMsg{items: items}
+}
+
+func (m *Model) trackItems(b jj.Bookmark, distance int, defaultRemote string) []item {
+	var items []item
+	if b.IsTrackable() {
+		if command, ok := jj.RefTrackLocalCommand(m.kind.subcommand, b, defaultRemote); ok {
+			items = append(items, item{
+				name:     fmt.Sprintf("track '%s'", b.Name),
+				priority: trackCommand,
+				dist:     distance,
+				args:     command,
+			})
+		}
+	}
+
+	for _, remote := range b.Remotes {
+		nameWithRemote := fmt.Sprintf("%s@%s", b.Name, remote.Remote)
+		if command, ok := jj.RefUntrackRemoteCommand(m.kind.subcommand, b, remote); ok {
+			items = append(items, item{
+				name:     fmt.Sprintf("untrack '%s'", nameWithRemote),
+				priority: untrackCommand,
+				dist:     distance,
+				args:     command,
+			})
+			continue
+		}
+		if command, ok := jj.RefTrackRemoteCommand(m.kind.subcommand, b, remote); ok {
+			items = append(items, item{
+				name:     fmt.Sprintf("track '%s'", nameWithRemote),
+				priority: trackCommand,
+				dist:     distance,
+				args:     command,
+			})
+		}
+	}
+	return items
 }

@@ -79,6 +79,11 @@ type OpenBookmarks struct{}
 
 func (OpenBookmarks) isIntent() {}
 
+//jjui:bind scope=ui action=open_tags
+type OpenTags struct{}
+
+func (OpenTags) isIntent() {}
+
 //jjui:bind scope=ui action=toggle_bookmark_pane
 type ToggleBookmarkPane struct{}
 
@@ -125,6 +130,10 @@ const (
 //jjui:bind scope=bookmarks action=bookmark_forget set=Kind:BookmarksFilterForget
 //jjui:bind scope=bookmarks action=bookmark_track set=Kind:BookmarksFilterTrack
 //jjui:bind scope=bookmarks action=bookmark_untrack set=Kind:BookmarksFilterUntrack
+//jjui:bind scope=tags action=tag_move set=Kind:BookmarksFilterMove
+//jjui:bind scope=tags action=tag_delete set=Kind:BookmarksFilterDelete
+//jjui:bind scope=tags action=tag_track set=Kind:BookmarksFilterTrack
+//jjui:bind scope=tags action=tag_untrack set=Kind:BookmarksFilterUntrack
 type BookmarksFilter struct {
 	Kind BookmarksFilterKind
 }
@@ -133,6 +142,8 @@ func (BookmarksFilter) isIntent() {}
 
 //jjui:bind scope=bookmarks action=cycle_remotes set=Delta:1
 //jjui:bind scope=bookmarks action=cycle_remotes_back set=Delta:-1
+//jjui:bind scope=tags action=cycle_remotes set=Delta:1
+//jjui:bind scope=tags action=cycle_remotes_back set=Delta:-1
 type BookmarksCycleRemotes struct {
 	Delta int
 }
@@ -140,6 +151,7 @@ type BookmarksCycleRemotes struct {
 func (BookmarksCycleRemotes) isIntent() {}
 
 //jjui:bind scope=bookmarks action=filter
+//jjui:bind scope=tags action=filter
 type BookmarksOpenFilter struct{}
 
 func (BookmarksOpenFilter) isIntent() {}
@@ -148,6 +160,10 @@ func (BookmarksOpenFilter) isIntent() {}
 //jjui:bind scope=bookmarks action=move_down set=Delta:1
 //jjui:bind scope=bookmarks action=page_up set=Delta:-1,IsPage:true
 //jjui:bind scope=bookmarks action=page_down set=Delta:1,IsPage:true
+//jjui:bind scope=tags action=move_up set=Delta:-1
+//jjui:bind scope=tags action=move_down set=Delta:1
+//jjui:bind scope=tags action=page_up set=Delta:-1,IsPage:true
+//jjui:bind scope=tags action=page_down set=Delta:1,IsPage:true
 type BookmarksNavigate struct {
 	Delta  int
 	IsPage bool
@@ -350,6 +366,7 @@ func (ChooseCancel) isIntent() {}
 //jjui:bind scope=ui action=cancel
 //jjui:bind scope=help action=cancel
 //jjui:bind scope=bookmarks action=cancel
+//jjui:bind scope=tags action=cancel
 //jjui:bind scope=git action=cancel
 //jjui:bind scope=status.input action=cancel
 //jjui:bind scope=file_search action=cancel
@@ -391,6 +408,7 @@ func (Cancel) isIntent() {}
 //jjui:bind scope=revisions.bookmark_target action=force_apply set=Force:true
 //jjui:bind scope=revisions.ace_jump action=apply
 //jjui:bind scope=bookmarks action=apply
+//jjui:bind scope=tags action=apply
 //jjui:bind scope=git action=apply
 //jjui:bind scope=revisions action=apply set=Force:$bool(force)
 //jjui:bind scope=revisions action=force_apply set=Force:true

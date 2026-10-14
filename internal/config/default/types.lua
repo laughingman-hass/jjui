@@ -563,6 +563,22 @@ function wait_refresh() end
 ---@field page_up fun()
 ---@field close fun()
 
+---@class jjui.tags
+---@field apply fun()
+---@field cancel fun()
+---@field cycle_remotes fun()
+---@field cycle_remotes_back fun()
+---@field filter fun()
+---@field move_down fun()
+---@field move_up fun()
+---@field page_down fun()
+---@field page_up fun()
+---@field tag_delete fun()
+---@field tag_move fun()
+---@field tag_track fun()
+---@field tag_untrack fun()
+---@field close fun()
+
 ---@class jjui.ui
 ---@field preview jjui.ui.preview
 ---@field cancel fun()
@@ -579,6 +595,7 @@ function wait_refresh() end
 ---@field open_oplog fun()
 ---@field open_redo fun()
 ---@field open_revset fun()
+---@field open_tags fun()
 ---@field open_undo fun()
 ---@field preview_expand fun()
 ---@field preview_half_page_down fun()
@@ -623,6 +640,7 @@ function wait_refresh() end
 ---@field password jjui.password
 ---@field redo jjui.redo
 ---@field status jjui.status
+---@field tags jjui.tags
 ---@field ui jjui.ui
 ---@field undo jjui.undo
 ---@field builtin jjui.builtin
@@ -657,6 +675,7 @@ function wait_refresh() end
 ---@field revisions jjui.revisions
 ---@field revset jjui.revset
 ---@field status jjui.status
+---@field tags jjui.tags
 ---@field ui jjui.ui
 ---@field undo jjui.undo
 

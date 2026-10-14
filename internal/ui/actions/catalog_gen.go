@@ -50,6 +50,7 @@ const (
 	ScopeTargetPicker               = "revisions.target_picker"
 	ScopeRevset                     = "revset"
 	ScopeStatusInput                = "status.input"
+	ScopeTags                       = "tags"
 	ScopeUi                         = "ui"
 	ScopeUiPreview                  = "ui.preview"
 	ScopeUndo                       = "undo"
@@ -845,6 +846,35 @@ func ResolveIntent(scope string, action keybindings.Action, args map[string]any)
 		case keybindings.Action("status.input.page_up"):
 			return intents.SuggestNavigate{Delta: 1}, true
 		}
+	case ScopeTags:
+		switch action {
+		case keybindings.Action("tags.apply"):
+			return intents.Apply{}, true
+		case keybindings.Action("tags.cancel"):
+			return intents.Cancel{}, true
+		case keybindings.Action("tags.cycle_remotes"):
+			return intents.BookmarksCycleRemotes{Delta: 1}, true
+		case keybindings.Action("tags.cycle_remotes_back"):
+			return intents.BookmarksCycleRemotes{Delta: -1}, true
+		case keybindings.Action("tags.filter"):
+			return intents.BookmarksOpenFilter{}, true
+		case keybindings.Action("tags.move_down"):
+			return intents.BookmarksNavigate{Delta: 1}, true
+		case keybindings.Action("tags.move_up"):
+			return intents.BookmarksNavigate{Delta: -1}, true
+		case keybindings.Action("tags.page_down"):
+			return intents.BookmarksNavigate{Delta: 1, IsPage: true}, true
+		case keybindings.Action("tags.page_up"):
+			return intents.BookmarksNavigate{Delta: -1, IsPage: true}, true
+		case keybindings.Action("tags.tag_delete"):
+			return intents.BookmarksFilter{Kind: intents.BookmarksFilterDelete}, true
+		case keybindings.Action("tags.tag_move"):
+			return intents.BookmarksFilter{Kind: intents.BookmarksFilterMove}, true
+		case keybindings.Action("tags.tag_track"):
+			return intents.BookmarksFilter{Kind: intents.BookmarksFilterTrack}, true
+		case keybindings.Action("tags.tag_untrack"):
+			return intents.BookmarksFilter{Kind: intents.BookmarksFilterUntrack}, true
+		}
 	case ScopeUi:
 		switch action {
 		case keybindings.Action("ui.cancel"):
@@ -875,6 +905,8 @@ func ResolveIntent(scope string, action keybindings.Action, args map[string]any)
 			return intents.Redo{}, true
 		case keybindings.Action("ui.open_revset"):
 			return intents.Edit{Clear: true}, true
+		case keybindings.Action("ui.open_tags"):
+			return intents.OpenTags{}, true
 		case keybindings.Action("ui.open_undo"):
 			return intents.Undo{}, true
 		case keybindings.Action("ui.preview_expand"):
