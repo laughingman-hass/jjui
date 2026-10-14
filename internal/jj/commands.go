@@ -233,15 +233,25 @@ func BookmarkForget(name string) CommandArgs {
 }
 
 func BookmarkTrack(name string, remote string) CommandArgs {
-	args := []string{"bookmark", "track", exactStringPattern(name)}
-	if remote != "" {
-		args = append(args, "--remote", exactStringPattern(remote))
-	}
-	return args
+	return RefTrack("bookmark", name, remote)
 }
 
 func BookmarkUntrack(name string, remote string) CommandArgs {
-	args := []string{"bookmark", "untrack", exactStringPattern(name)}
+	return RefUntrack("bookmark", name, remote)
+}
+
+// RefTrack tracks a remote ref; subcommand is the jj ref kind ("bookmark" or "tag").
+func RefTrack(subcommand string, name string, remote string) CommandArgs {
+	return refTrackArgs(subcommand, "track", name, remote)
+}
+
+// RefUntrack untracks a remote ref; subcommand is the jj ref kind ("bookmark" or "tag").
+func RefUntrack(subcommand string, name string, remote string) CommandArgs {
+	return refTrackArgs(subcommand, "untrack", name, remote)
+}
+
+func refTrackArgs(subcommand string, action string, name string, remote string) CommandArgs {
+	args := []string{subcommand, action, exactStringPattern(name)}
 	if remote != "" {
 		args = append(args, "--remote", exactStringPattern(remote))
 	}

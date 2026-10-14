@@ -25,6 +25,29 @@ func TestBookmarkPatternCommandsUseExactStringPatterns(t *testing.T) {
 	assert.Equal(t, CommandArgs{"bookmark", "untrack", `exact:"1.3.63-+-json-length-\"fix\"\\branch"`, "--remote", `exact:"origin+backup"`}, BookmarkUntrack(name, remote))
 }
 
+func TestRefTrackCommandsWithTagSubcommand(t *testing.T) {
+	name := `v1.0+"rc"`
+	remote := `origin+backup`
+	wantTrack := CommandArgs{"tag", "track", `exact:"v1.0+\"rc\""`, "--remote", `exact:"origin+backup"`}
+	wantUntrack := CommandArgs{"tag", "untrack", `exact:"v1.0+\"rc\""`, "--remote", `exact:"origin+backup"`}
+	tag := Bookmark{Name: name, Local: &BookmarkRemote{Present: true}}
+
+	assert.Equal(t, wantTrack, RefTrack("tag", name, remote))
+	assert.Equal(t, wantUntrack, RefUntrack("tag", name, remote))
+
+	got, ok := RefTrackLocalCommand("tag", tag, remote)
+	assert.True(t, ok)
+	assert.Equal(t, wantTrack, got)
+
+	got, ok = RefTrackRemoteCommand("tag", tag, BookmarkRemote{Remote: remote})
+	assert.True(t, ok)
+	assert.Equal(t, wantTrack, got)
+
+	got, ok = RefUntrackRemoteCommand("tag", tag, BookmarkRemote{Remote: remote, Tracked: true})
+	assert.True(t, ok)
+	assert.Equal(t, wantUntrack, got)
+}
+
 func TestFileCommandsUseTypedRepositoryPaths(t *testing.T) {
 	file := NewFileName(`dir/a "quoted"\file.go`)
 	escaped := `file:"dir/a \"quoted\"\\file.go"`
