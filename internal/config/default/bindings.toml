@@ -47,6 +47,7 @@ bindings = [
     { key = "r", action = "revisions.open_rebase", scope = "revisions", desc = "rebase" },
     { key = "v", action = "revisions.open_evolog", scope = "revisions", desc = "evolog" },
     { key = "b", action = "ui.open_bookmarks", scope = "revisions", desc = "bookmarks" },
+    { key = "t", action = "ui.open_tags", scope = "revisions", desc = "tags" },
     { key = "g", action = "ui.open_git", scope = "revisions", desc = "git" },
     { key = "o", action = "ui.open_oplog", scope = "revisions", desc = "oplog" },
     { key = "shift+s", action = "revisions.open_squash", scope = "revisions", desc = "squash" },
@@ -359,6 +360,23 @@ bindings = [
     { key = "pgdown", action = "bookmarks.page_down", scope = "bookmarks", desc = "pgdown" },
     { key = "esc", action = "bookmarks.cancel", scope = "bookmarks.filter", desc = "cancel" },
     { key = "enter", action = "bookmarks.apply", scope = "bookmarks.filter", desc = "apply" },
+
+    # tags
+    { key = "esc", action = "tags.cancel", scope = "tags", desc = "cancel" },
+    { key = "enter", action = "tags.apply", scope = "tags", desc = "apply" },
+    { key = "m", action = "tags.tag_move", scope = "tags", desc = "move" },
+    { key = "d", action = "tags.tag_delete", scope = "tags", desc = "delete" },
+    { key = "t", action = "tags.tag_track", scope = "tags", desc = "track" },
+    { key = "u", action = "tags.tag_untrack", scope = "tags", desc = "untrack" },
+    { key = "/", action = "tags.filter", scope = "tags", desc = "filter" },
+    { key = "tab", action = "tags.cycle_remotes", scope = "tags", desc = "next remote" },
+    { key = "shift+tab", action = "tags.cycle_remotes_back", scope = "tags", desc = "prev remote" },
+    { key = ["up", "k"], action = "tags.move_up", scope = "tags", desc = "up" },
+    { key = ["down", "j"], action = "tags.move_down", scope = "tags", desc = "down" },
+    { key = "pgup", action = "tags.page_up", scope = "tags", desc = "pgup" },
+    { key = "pgdown", action = "tags.page_down", scope = "tags", desc = "pgdown" },
+    { key = "esc", action = "tags.cancel", scope = "tags.filter", desc = "cancel" },
+    { key = "enter", action = "tags.apply", scope = "tags.filter", desc = "apply" },
 
     # bookmark_pane
     { key = "tab", action = "ui.focus_next_pane", scope = "bookmark_pane", desc = "next pane" },

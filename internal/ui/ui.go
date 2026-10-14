@@ -648,6 +648,12 @@ func (m *Model) HandleIntent(intent intents.Intent) (tea.Cmd, bool) {
 		}
 		changeIds := m.revisions.GetCommitIds()
 		return m.openDialog(bookmarks.NewModel(m.context, current, changeIds)), true
+	case intents.OpenTags:
+		current := m.revisions.SelectedRevision()
+		if current == nil {
+			return nil, true
+		}
+		return m.openDialog(bookmarks.NewTagModel(m.context, current, m.revisions.GetCommitIds())), true
 	case intents.OpLogOpen:
 		model := oplog.New(m.context)
 		m.openScreen(model)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -537,4 +538,42 @@ func TestSetupLuaTypes_PreservesExistingLuaRC(t *testing.T) {
 	embeddedTypes, err := configFS.ReadFile("default/types.lua")
 	require.NoError(t, err)
 	assert.Equal(t, string(embeddedTypes), string(typesData))
+}
+
+func TestLoadDefaultConfig_BindsTagMenu(t *testing.T) {
+	cfg := loadDefaultConfig()
+
+	keysFor := func(scope string, action string) []string {
+		var keys []string
+		for _, b := range cfg.Bindings {
+			if b.Scope == scope && b.Action == action {
+				keys = append(keys, b.Key...)
+			}
+		}
+		return keys
+	}
+
+	assert.Equal(t, []string{"t"}, keysFor("revisions", "ui.open_tags"))
+	assert.Equal(t, []string{"m"}, keysFor("tags", "tags.tag_move"))
+	assert.Equal(t, []string{"d"}, keysFor("tags", "tags.tag_delete"))
+	assert.Equal(t, []string{"t"}, keysFor("tags", "tags.tag_track"))
+	assert.Equal(t, []string{"u"}, keysFor("tags", "tags.tag_untrack"))
+	assert.Equal(t, keysFor("bookmarks", "bookmarks.filter"), keysFor("tags", "tags.filter"))
+	assert.Equal(t, keysFor("bookmarks", "bookmarks.cycle_remotes"), keysFor("tags", "tags.cycle_remotes"))
+	assert.Equal(t, keysFor("bookmarks", "bookmarks.move_up"), keysFor("tags", "tags.move_up"))
+	assert.Equal(t, keysFor("bookmarks.filter", "bookmarks.cancel"), keysFor("tags.filter", "tags.cancel"))
+	assert.Empty(t, keysFor("tags", "tags.tag_forget"))
+}
+
+func TestLoadEmbeddedDefaultTheme_TagsMirrorBookmarks(t *testing.T) {
+	for _, dark := range []bool{false, true} {
+		theme, err := LoadEmbeddedTheme("default", dark)
+		require.NoError(t, err)
+		require.Contains(t, theme.Colors, "tags title")
+		for key, color := range theme.Colors {
+			if rest, ok := strings.CutPrefix(key, "bookmarks"); ok {
+				assert.Equal(t, color, theme.Colors["tags"+rest], "dark=%v key=%s", dark, key)
+			}
+		}
+	}
 }
