@@ -102,6 +102,14 @@ type OpenSetBookmark struct {
 
 func (OpenSetBookmark) isIntent() {}
 
+//jjui:bind scope=revisions action=open_set_tag set=Value:$string?(value)
+type OpenSetTag struct {
+	Value    string
+	Revision string
+}
+
+func (OpenSetTag) isIntent() {}
+
 type BookmarksFilterKind string
 
 const (
@@ -333,6 +341,7 @@ func (ChooseCancel) isIntent() {}
 //jjui:bind scope=revisions.absorb action=cancel
 //jjui:bind scope=revisions.set_parents action=cancel
 //jjui:bind scope=revisions.set_bookmark action=cancel
+//jjui:bind scope=revisions.set_tag action=cancel
 //jjui:bind scope=revisions.diff_range action=cancel
 //jjui:bind scope=revisions.new_between action=cancel
 //jjui:bind scope=revisions.bookmark_target action=cancel
@@ -375,6 +384,7 @@ func (Cancel) isIntent() {}
 //jjui:bind scope=revisions.absorb action=apply
 //jjui:bind scope=revisions.set_parents action=apply
 //jjui:bind scope=revisions.set_bookmark action=apply
+//jjui:bind scope=revisions.set_tag action=apply
 //jjui:bind scope=revisions.diff_range action=apply
 //jjui:bind scope=revisions.new_between action=apply
 //jjui:bind scope=revisions.bookmark_target action=apply set=Force:$bool(force)

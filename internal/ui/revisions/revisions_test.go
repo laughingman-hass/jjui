@@ -549,6 +549,20 @@ func TestModel_ForwardsOperationIntentToFocusedOperation(t *testing.T) {
 	assert.True(t, model.IsEditing(), "rebase target picker should open via dispatched operation intent")
 }
 
+func TestModel_OpenSetTagOpensSetTagInput(t *testing.T) {
+	commandRunner := test.NewTestCommandRunner(t)
+	commandRunner.Expect(jj.TagListAll())
+	defer commandRunner.Verify()
+
+	ctx := test.NewTestContext(commandRunner)
+	model := New(ctx)
+	model.updateGraphRows(rows, "a", true)
+
+	test.SimulateModel(model, model.Update(intents.OpenSetTag{}))
+	assert.True(t, model.IsEditing())
+	assert.Equal(t, "set tag", model.CurrentOperation().Name())
+}
+
 func TestModel_TargetPickerCancelClosesEditing(t *testing.T) {
 	commandRunner := test.NewTestCommandRunner(t)
 	commandRunner.Expect(jj.BookmarkListAll())

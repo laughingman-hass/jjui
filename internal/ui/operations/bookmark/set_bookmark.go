@@ -140,6 +140,10 @@ func (s *SetBookmarkOperation) Name() string {
 }
 
 func NewSetBookmarkOperation(context *context.MainContext, changeId string, initialValue string) *SetBookmarkOperation {
+	return newSetRefOperation(bookmarkSetKind, context, changeId, initialValue)
+}
+
+func newSetRefOperation(kind refSetKind, context *context.MainContext, changeId string, initialValue string) *SetBookmarkOperation {
 	t := textinput.New()
 	t.ShowSuggestions = true
 	t.CharLimit = 120
@@ -151,7 +155,7 @@ func NewSetBookmarkOperation(context *context.MainContext, changeId string, init
 	t.Focus()
 
 	op := &SetBookmarkOperation{
-		kind:     bookmarkSetKind,
+		kind:     kind,
 		name:     t,
 		revision: changeId,
 		context:  context,

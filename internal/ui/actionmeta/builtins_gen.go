@@ -268,6 +268,7 @@ var builtInActionScopes = map[string][]string{
 	"revisions.open_revert":                         {"revisions"},
 	"revisions.open_set_bookmark":                   {"revisions"},
 	"revisions.open_set_parents":                    {"revisions"},
+	"revisions.open_set_tag":                        {"revisions"},
 	"revisions.open_squash":                         {"revisions"},
 	"revisions.page_down":                           {"revisions"},
 	"revisions.page_up":                             {"revisions"},
@@ -300,6 +301,10 @@ var builtInActionScopes = map[string][]string{
 	"revisions.set_parents.cancel":                  {"revisions.set_parents"},
 	"revisions.set_parents.jump_to_working_copy":    {"revisions.set_parents"},
 	"revisions.set_parents.toggle_select":           {"revisions.set_parents"},
+	"revisions.set_tag.apply":                       {"revisions.set_tag"},
+	"revisions.set_tag.autocomplete":                {"revisions.set_tag"},
+	"revisions.set_tag.autocomplete_back":           {"revisions.set_tag"},
+	"revisions.set_tag.cancel":                      {"revisions.set_tag"},
 	"revisions.split":                               {"revisions"},
 	"revisions.split_parallel":                      {"revisions"},
 	"revisions.squash.ace_jump":                     {"revisions.squash"},
@@ -466,6 +471,9 @@ var builtInActionArgSchemas = map[string]map[string]string{
 		"force": "bool",
 	},
 	"revisions.open_set_bookmark": {
+		"value": "string",
+	},
+	"revisions.open_set_tag": {
 		"value": "string",
 	},
 	"revisions.rebase.apply": {

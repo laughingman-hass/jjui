@@ -45,6 +45,7 @@ const (
 	ScopeRevert                     = "revisions.revert"
 	ScopeSetBookmark                = "revisions.set_bookmark"
 	ScopeSetParents                 = "revisions.set_parents"
+	ScopeSetTag                     = "revisions.set_tag"
 	ScopeSquash                     = "revisions.squash"
 	ScopeTargetPicker               = "revisions.target_picker"
 	ScopeRevset                     = "revset"
@@ -476,6 +477,8 @@ func ResolveIntent(scope string, action keybindings.Action, args map[string]any)
 			return intents.OpenSetBookmark{Value: actionargs.StringArg(args, "value", "")}, true
 		case keybindings.Action("revisions.open_set_parents"):
 			return intents.OpenSetParents{}, true
+		case keybindings.Action("revisions.open_set_tag"):
+			return intents.OpenSetTag{Value: actionargs.StringArg(args, "value", "")}, true
 		case keybindings.Action("revisions.open_squash"):
 			return intents.OpenSquash{}, true
 		case keybindings.Action("revisions.page_down"):
@@ -754,6 +757,17 @@ func ResolveIntent(scope string, action keybindings.Action, args map[string]any)
 			return intents.Navigate{Target: intents.TargetWorkingCopy}, true
 		case keybindings.Action("revisions.set_parents.toggle_select"):
 			return intents.SetParentsToggleSelect{}, true
+		}
+	case ScopeSetTag:
+		switch action {
+		case keybindings.Action("revisions.set_tag.apply"):
+			return intents.Apply{}, true
+		case keybindings.Action("revisions.set_tag.autocomplete"):
+			return intents.AutocompleteCycle{}, true
+		case keybindings.Action("revisions.set_tag.autocomplete_back"):
+			return intents.AutocompleteCycle{Reverse: true}, true
+		case keybindings.Action("revisions.set_tag.cancel"):
+			return intents.Cancel{}, true
 		}
 	case ScopeSquash:
 		switch action {

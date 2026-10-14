@@ -817,6 +817,8 @@ func (m *Model) HandleIntent(intent intents.Intent) (tea.Cmd, bool) {
 		return m.startSetParents(intent), true
 	case intents.OpenSetBookmark:
 		return m.startBookmarkSet(intent), true
+	case intents.OpenSetTag:
+		return m.startTagSet(intent), true
 	case intents.RevisionsToggleSelect:
 		commit := m.SelectedRevision()
 		if commit == nil {
@@ -874,6 +876,18 @@ func (m *Model) startBookmarkSet(intent intents.OpenSetBookmark) tea.Cmd {
 		revision = rev.GetChangeId()
 	}
 	return m.setBaseOperation(bookmark.NewSetBookmarkOperation(m.context, revision, intent.Value))
+}
+
+func (m *Model) startTagSet(intent intents.OpenSetTag) tea.Cmd {
+	revision := intent.Revision
+	if revision == "" {
+		rev := m.SelectedRevision()
+		if rev == nil {
+			return nil
+		}
+		revision = rev.GetChangeId()
+	}
+	return m.setBaseOperation(bookmark.NewSetTagOperation(m.context, revision, intent.Value))
 }
 
 func (m *Model) refresh(intent intents.Refresh) tea.Cmd {

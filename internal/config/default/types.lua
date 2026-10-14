@@ -303,6 +303,7 @@ function wait_refresh() end
 ---@field revert jjui.revisions.revert
 ---@field set_bookmark jjui.revisions.set_bookmark
 ---@field set_parents jjui.revisions.set_parents
+---@field set_tag jjui.revisions.set_tag
 ---@field squash jjui.revisions.squash
 ---@field target_picker jjui.revisions.target_picker
 ---@field ace_jump fun()
@@ -336,6 +337,7 @@ function wait_refresh() end
 ---@field open_revert fun()
 ---@field open_set_bookmark fun(args: {value?: string})
 ---@field open_set_parents fun()
+---@field open_set_tag fun(args: {value?: string})
 ---@field open_squash fun()
 ---@field page_down fun()
 ---@field page_up fun()
@@ -505,6 +507,13 @@ function wait_refresh() end
 ---@field cancel fun()
 ---@field jump_to_working_copy fun()
 ---@field toggle_select fun()
+---@field close fun()
+
+---@class jjui.revisions.set_tag
+---@field apply fun()
+---@field autocomplete fun()
+---@field autocomplete_back fun()
+---@field cancel fun()
 ---@field close fun()
 
 ---@class jjui.revisions.squash
