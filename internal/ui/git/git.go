@@ -399,6 +399,17 @@ func loadBookmarks(c context.CommandRunner, changeId string) []jj.Bookmark {
 	return bookmarks
 }
 
+func loadTags(c context.CommandRunner, changeId string) []jj.Bookmark {
+	bytes, _ := c.RunCommandImmediate(jj.TagListRevset(changeId))
+	return jj.ParseBookmarkListOutput(string(bytes))
+}
+
+// isPushable reports whether a ref has a local target and either has no
+// remotes yet or is tracked on the given remote.
+func isPushable(ref jj.Bookmark, remote string) bool {
+	return ref.Local != nil && (len(ref.Remotes) == 0 || ref.HasTrackedRemote(remote))
+}
+
 func loadRemoteNames(c context.CommandRunner) []string {
 	bytes, _ := c.RunCommandImmediate(jj.GitRemoteList())
 	remotes := jj.ParseRemoteListOutput(string(bytes))
@@ -638,8 +649,7 @@ func (m *Model) createMenuItems() []item {
 			if b.Conflict {
 				continue
 			}
-			pushable := b.Local != nil && (len(b.Remotes) == 0 || b.HasTrackedRemote(selectedRemote))
-			if pushable && !seenBookmarks[b.Name] {
+			if isPushable(b, selectedRemote) && !seenBookmarks[b.Name] {
 				seenBookmarks[b.Name] = true
 				selectedBookmarks = append(selectedBookmarks, b.Name)
 			}
@@ -653,17 +663,38 @@ func (m *Model) createMenuItems() []item {
 			}
 		}
 	}
+
+	var selectedTags []string
+	seenTags := make(map[string]bool)
+	for _, commit := range revisions.Revisions {
+		for _, tag := range loadTags(m.context, commit.GetChangeId()) {
+			if tag.Conflict || seenTags[tag.Name] {
+				continue
+			}
+			seenTags[tag.Name] = true
+			if isPushable(tag, selectedRemote) {
+				selectedTags = append(selectedTags, tag.Name)
+			}
+			items = append(items, item{
+				name:     fmt.Sprintf("git push --tag %s --remote %s", tag.Name, selectedRemote),
+				desc:     fmt.Sprintf("Git push tag %s to %s", tag.Name, selectedRemote),
+				command:  jj.GitPush("--tag", tag.Name, "--remote", selectedRemote),
+				category: itemCategoryPush,
+			})
+		}
+	}
+
 	items = append(items,
 		item{
 			name:     fmt.Sprintf("git push --remote %s", selectedRemote),
-			desc:     "Push tracking bookmarks in the current revset",
+			desc:     "Push tracking bookmarks and tags in the current revset",
 			command:  jj.GitPush("--remote", selectedRemote),
 			category: itemCategoryPush,
 			key:      "p",
 		},
 		item{
 			name:     fmt.Sprintf("git push --all --deleted --remote %s", selectedRemote),
-			desc:     "Push all bookmarks (including new and deleted bookmarks)",
+			desc:     "Push all bookmarks and tags (including new and deleted)",
 			command:  jj.GitPush("--all", "--deleted", "--remote", selectedRemote),
 			category: itemCategoryPush,
 			key:      "a",
@@ -701,6 +732,22 @@ func (m *Model) createMenuItems() []item {
 			})
 	}
 
+	if len(selectedTags) > 0 {
+		var tagFlags []string
+		for _, name := range selectedTags {
+			tagFlags = append(tagFlags, "--tag", name)
+		}
+		flags := append([]string{"--remote", selectedRemote}, tagFlags...)
+		items = append(items,
+			item{
+				category: itemCategoryPush,
+				name:     fmt.Sprintf("git push %s --remote %s", strings.Join(tagFlags, " "), selectedRemote),
+				desc:     fmt.Sprintf("Push all tags in selected changes (%s)", strings.Join(selectedTags, ", ")),
+				command:  jj.GitPush(flags...),
+				key:      "g",
+			})
+	}
+
 	for _, commit := range revisions.Revisions {
 		item := item{
 			category: itemCategoryPush,
@@ -717,14 +764,14 @@ func (m *Model) createMenuItems() []item {
 	items = append(items,
 		item{
 			name:     fmt.Sprintf("git push --deleted --remote %s", selectedRemote),
-			desc:     "Push all deleted bookmarks",
+			desc:     "Push all deleted bookmarks and tags",
 			command:  jj.GitPush("--deleted", "--remote", selectedRemote),
 			category: itemCategoryPush,
 			key:      "d",
 		},
 		item{
 			name:     fmt.Sprintf("git push --tracked --remote %s", selectedRemote),
-			desc:     "Push all tracked bookmarks",
+			desc:     "Push all tracked bookmarks and tags",
 			command:  jj.GitPush("--tracked", "--remote", selectedRemote),
 			category: itemCategoryPush,
 			key:      "t",
