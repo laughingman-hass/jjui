@@ -27,6 +27,24 @@ zeta;origin;true;false;false;false;c`
 	assert.Len(t, zeta.Remotes, 1)
 }
 
+func TestParseBookmarkListOutput_TagList(t *testing.T) {
+	output := `v1.0;.;true;false;false;false;a
+v1.0;origin;true;true;false;false;a
+v2.0;upstream;true;false;false;false;b`
+	tags := ParseBookmarkListOutput(output)
+	assert.Equal(t, []Bookmark{
+		{
+			Name:    "v1.0",
+			Local:   &BookmarkRemote{Remote: ".", CommitId: "a", Present: true},
+			Remotes: []BookmarkRemote{{Remote: "origin", CommitId: "a", Tracked: true, Present: true}},
+		},
+		{
+			Name:    "v2.0",
+			Remotes: []BookmarkRemote{{Remote: "upstream", CommitId: "b", Present: true}},
+		},
+	}, tags)
+}
+
 func TestParseBookmarkListOutput(t *testing.T) {
 	type args struct {
 		output string

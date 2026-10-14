@@ -52,6 +52,14 @@ func TestTagListRevsetUsesAllRefsTemplate(t *testing.T) {
 	assert.Equal(t, CommandArgs{"tag", "list", "-a", "-r", "abc123", "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}, TagListRevset("abc123"))
 }
 
+func TestTagSetAlwaysAllowsMove(t *testing.T) {
+	assert.Equal(t, CommandArgs{"tag", "set", "--allow-move", "-r", "abc123", "v1.0"}, TagSet("abc123", "v1.0"))
+}
+
+func TestTagListAllUsesAllRefsTemplate(t *testing.T) {
+	assert.Equal(t, CommandArgs{"tag", "list", "-a", "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}, TagListAll())
+}
+
 func TestFileCommandsUseTypedRepositoryPaths(t *testing.T) {
 	file := NewFileName(`dir/a "quoted"\file.go`)
 	escaped := `file:"dir/a \"quoted\"\\file.go"`

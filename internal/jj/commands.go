@@ -208,6 +208,10 @@ func BookmarkSet(revision string, name string) CommandArgs {
 	return []string{"bookmark", "set", "-r", revision, name}
 }
 
+func TagSet(revision string, name string) CommandArgs {
+	return []string{"tag", "set", "--allow-move", "-r", revision, name}
+}
+
 func exactStringPattern(value string) string {
 	return "exact:" + strconv.Quote(value)
 }
@@ -302,6 +306,10 @@ func BookmarkListAll() CommandArgs {
 
 func TagList() CommandArgs {
 	return []string{"tag", "list", "--template", "name ++ '\n'", "--color", "never", "--ignore-working-copy"}
+}
+
+func TagListAll() CommandArgs {
+	return []string{"tag", "list", "-a", "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}
 }
 
 func TagListRevset(revset string) CommandArgs {
