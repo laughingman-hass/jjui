@@ -48,6 +48,10 @@ func TestRefTrackCommandsWithTagSubcommand(t *testing.T) {
 	assert.Equal(t, wantUntrack, got)
 }
 
+func TestTagListRevsetUsesAllRefsTemplate(t *testing.T) {
+	assert.Equal(t, CommandArgs{"tag", "list", "-a", "-r", "abc123", "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}, TagListRevset("abc123"))
+}
+
 func TestFileCommandsUseTypedRepositoryPaths(t *testing.T) {
 	file := NewFileName(`dir/a "quoted"\file.go`)
 	escaped := `file:"dir/a \"quoted\"\\file.go"`

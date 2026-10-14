@@ -304,6 +304,10 @@ func TagList() CommandArgs {
 	return []string{"tag", "list", "--template", "name ++ '\n'", "--color", "never", "--ignore-working-copy"}
 }
 
+func TagListRevset(revset string) CommandArgs {
+	return []string{"tag", "list", "-a", "-r", revset, "--template", allBookmarkTemplate, "--color", "never", "--ignore-working-copy"}
+}
+
 func GitFetch(flags ...string) CommandArgs {
 	args := []string{"git", "fetch"}
 	if flags != nil {
