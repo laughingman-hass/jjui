@@ -8,6 +8,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/idursun/jjui/internal/jj"
 	"github.com/idursun/jjui/internal/ui/actions"
+	"github.com/idursun/jjui/internal/ui/bindings"
 	"github.com/idursun/jjui/internal/ui/common"
 	"github.com/idursun/jjui/internal/ui/context"
 	"github.com/idursun/jjui/internal/ui/intents"
@@ -21,7 +22,37 @@ var _ operations.Operation = (*SetBookmarkOperation)(nil)
 var _ common.Editable = (*SetBookmarkOperation)(nil)
 var _ common.ScopeProvider = (*SetBookmarkOperation)(nil)
 
+// refSetKind holds everything the set operation needs to know about one kind of jj ref.
+type refSetKind struct {
+	scope       bindings.ScopeName
+	name        string
+	set         func(revision string, name string) jj.CommandArgs
+	suggestions func(runner context.CommandRunner, revision string) []string
+}
+
+var bookmarkSetKind = refSetKind{
+	scope:       actions.ScopeSetBookmark,
+	name:        "set bookmark",
+	set:         jj.BookmarkSet,
+	suggestions: bookmarkSuggestions,
+}
+
+func bookmarkSuggestions(runner context.CommandRunner, revision string) []string {
+	output, err := runner.RunCommandImmediate(jj.BookmarkListMovable(revision))
+	if err != nil {
+		return nil
+	}
+	var suggestions []string
+	for _, b := range jj.ParseBookmarkListOutput(string(output)) {
+		if b.Name != "" && !b.Backwards {
+			suggestions = append(suggestions, b.Name)
+		}
+	}
+	return suggestions
+}
+
 type SetBookmarkOperation struct {
+	kind            refSetKind
 	context         *context.MainContext
 	revision        string
 	name            textinput.Model
@@ -36,7 +67,7 @@ func (s *SetBookmarkOperation) IsEditing() bool {
 func (s *SetBookmarkOperation) Scopes() []common.Scope {
 	return []common.Scope{
 		{
-			Name:    actions.ScopeSetBookmark,
+			Name:    s.kind.scope,
 			Leak:    common.LeakNone,
 			Handler: s,
 		},
@@ -48,7 +79,7 @@ func (s *SetBookmarkOperation) HandleIntent(intent intents.Intent) (tea.Cmd, boo
 	case intents.Cancel:
 		return common.Close, true
 	case intents.Apply:
-		return s.context.RunCommand(jj.BookmarkSet(s.revision, s.name.Value()), common.CloseApplied, common.Refresh), true
+		return s.context.RunCommand(s.kind.set(s.revision, s.name.Value()), common.CloseApplied, common.Refresh), true
 	case intents.AutocompleteCycle:
 		s.cycleSuggestion(intent.Reverse)
 		return nil, true
@@ -70,14 +101,7 @@ func (s *SetBookmarkOperation) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s *SetBookmarkOperation) Init() tea.Cmd {
-	if output, err := s.context.RunCommandImmediate(jj.BookmarkListMovable(s.revision)); err == nil {
-		bookmarks := jj.ParseBookmarkListOutput(string(output))
-		var suggestions []string
-		for _, b := range bookmarks {
-			if b.Name != "" && !b.Backwards {
-				suggestions = append(suggestions, b.Name)
-			}
-		}
+	if suggestions := s.kind.suggestions(s.context, s.revision); suggestions != nil {
 		s.suggestions = suggestions
 		s.name.SetSuggestions(suggestions)
 	}
@@ -112,7 +136,7 @@ func (s *SetBookmarkOperation) InlineCursor(commit *jj.Commit, pos operations.Re
 }
 
 func (s *SetBookmarkOperation) Name() string {
-	return "set bookmark"
+	return s.kind.name
 }
 
 func NewSetBookmarkOperation(context *context.MainContext, changeId string, initialValue string) *SetBookmarkOperation {
@@ -127,6 +151,7 @@ func NewSetBookmarkOperation(context *context.MainContext, changeId string, init
 	t.Focus()
 
 	op := &SetBookmarkOperation{
+		kind:     bookmarkSetKind,
 		name:     t,
 		revision: changeId,
 		context:  context,
